@@ -6,8 +6,7 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <unistd.h>
-#include <arpa/inet.h>
-#include <linux/in.h>
+#include <netinet/in.h>
 #include <pthread.h>
 #include "ToB.h"
 
