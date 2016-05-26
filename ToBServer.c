@@ -5,7 +5,10 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/select.h>
+#include <unistd.h>
+#include <arpa/inet.h>
 #include <linux/in.h>
+#include <pthread.h>
 #include "ToB.h"
 
 const char waiting_message[] = "Please wait someone to be online\n";
