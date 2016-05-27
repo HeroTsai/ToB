@@ -1,4 +1,4 @@
-#define DEBUG
+#undef DEBUG
 #ifndef DEBUG
 #define perror(arg)
 #endif

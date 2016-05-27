@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -13,9 +15,11 @@ char buf[BUFSIZ];
 int main(int argc, char *argv[])
 {
 	fd_set readfds;
-	int fd, nfds, ret;
+	int fd, ret;
 	ssize_t size;
 	struct sockaddr_in remote;
+	struct timeval timeout;
+	char rssi;
 
 	if (argc < 2) {
 		fprintf(stderr, "Usage: %s serverAddress\n", argv[0]);
@@ -40,47 +44,54 @@ int main(int argc, char *argv[])
 		return errno;
 	}
 
+	srandom(time(NULL));
+
 	while (1) {
 		/* init */
 		FD_ZERO(&readfds);
 		FD_SET(fd, &readfds);
-		FD_SET(STDIN_FILENO, &readfds);
 
-		nfds = (fd > STDIN_FILENO) ? fd : STDIN_FILENO;
-		ret = select(++nfds, &readfds, NULL, NULL, NULL);
+		/* send random generated rssi per 10 seconds */
+		memset(&timeout, 0, sizeof(timeout));
+		timeout.tv_sec = 10;
+
+		ret = select(fd + 1, &readfds, NULL, NULL, &timeout);
 
 		if (ret < 0) {
 			perror("select");
 			break;
 		} else if (ret == 0) {
-			perror("No data");
-			break;
+			/* timeout, send random generated rssi */
+			/* range: -1~-10, not in range: 0 */
+			rssi = -(random() % 11);
+
+			if (rssi == 0)
+				printf("<-- NOT in Range\n");
+			else
+				printf("<-- rssi = %hhd\n", rssi);
+
+			size = snprintf(buf, sizeof(buf), "%hhd", rssi);
+
+			size = send(fd, buf, size, 0);
+			if (size < 0)
+				perror("send");
+			if (size <= 0)
+				break;
+
+			continue;
 		}
 
 		if (FD_ISSET(fd, &readfds)) {
 			size = recv(fd, buf, sizeof(buf), 0);
-			if (size <= 0) {
+			if (size < 0)
 				perror("recv");
+			if (size <= 0)
 				break;
-			}
 			size = write(STDOUT_FILENO, buf, size);
-			if (size <= 0) {
+			if (size < 0)
 				perror("write");
+			if (size <= 0)
 				break;
-			}
-		}
-
-		if (FD_ISSET(STDIN_FILENO, &readfds)) {
-			size = read(STDIN_FILENO, buf, sizeof(buf));
-			if (size <= 0) {
-				perror("read");
-				break;
-			}
-			size = send(fd, buf, size, 0);
-			if (size <= 0) {
-				perror("send");
-				break;
-			}
 		}
 	}
 

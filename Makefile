@@ -1,12 +1,17 @@
 CFLAGS=-g -O0 -Wall
 LDFLAGS=-pthread
+CC_AARCH64=aarch64-linux-gnu-gcc
+BINS=ToBServer ToBHotspot ToBHotspot_aarch64 rssid rssi rssi_aarch64
 
-all: ToBServer ToBHotspot ToBHotspot_aarch64
+all: $(BINS)
 
-ToBServer ToBHotspot: ToB.h
+ToBServer ToBHotspot rssid rssi: ToB.h
 
 ToBHotspot_aarch64: ToBHotspot.c ToB.h
-	aarch64-linux-gnu-gcc-5 $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC_AARCH64) $(CFLAGS) $(LDFLAGS) $^ -o $@
+
+rssi_aarch64: rssi.c ToB.h
+	$(CC_AARCH64) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
 clean:
-	rm -f ToBServer ToBHotspot ToBHotspot_aarch64
+	rm -f $(BINS)
